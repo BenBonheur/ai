@@ -330,7 +330,6 @@ export default function AvailableParkingPage() {
         </div>
       </div>
 
-      {/* Search and Filters */}
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
@@ -363,7 +362,7 @@ export default function AvailableParkingPage() {
                   <SelectItem value="all">All Prices</SelectItem>
                   <SelectItem value="budget">Budget (≤ 400 RWF/hr)</SelectItem>
                   <SelectItem value="mid">Mid-range (401-800 RWF/hr)</SelectItem>
-                  <SelectItem value="premium">Premium (> 800 RWF/hr)</SelectItem>
+                  <SelectItem value="premium">Premium (&gt; 800 RWF/hr)</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -399,7 +398,7 @@ export default function AvailableParkingPage() {
                   <SelectItem value="all">All Distances</SelectItem>
                   <SelectItem value="near">Nearby (≤ 2 km)</SelectItem>
                   <SelectItem value="medium">Medium (2-5 km)</SelectItem>
-                  <SelectItem value="far">Far (> 5 km)</SelectItem>
+                  <SelectItem value="far">Far (&gt; 5 km)</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -443,7 +442,6 @@ export default function AvailableParkingPage() {
         </CardContent>
       </Card>
 
-      {/* Results Summary */}
       <div className="flex items-center justify-between">
         <p className="text-sm text-muted-foreground">
           Showing {filteredLots.length} of {parkingLots.length} parking locations
@@ -464,7 +462,6 @@ export default function AvailableParkingPage() {
         </div>
       </div>
 
-      {/* Content based on view mode */}
       {viewMode === "map" ? (
         <Card>
           <CardContent className="p-0">
@@ -479,7 +476,6 @@ export default function AvailableParkingPage() {
               <Card key={lot.id} className="overflow-hidden">
                 <CardContent className="p-6">
                   <div className="flex flex-col md:flex-row gap-6">
-                    {/* Image */}
                     <div className="w-full md:w-48 h-48 bg-muted rounded-lg overflow-hidden">
                       <img
                         src={lot.images[0] || "/placeholder.svg"}
@@ -488,7 +484,6 @@ export default function AvailableParkingPage() {
                       />
                     </div>
 
-                    {/* Details */}
                     <div className="flex-1 space-y-4">
                       <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-2">
                         <div>
@@ -520,7 +515,6 @@ export default function AvailableParkingPage() {
 
                       <p className="text-sm text-muted-foreground">{lot.description}</p>
 
-                      {/* Amenities */}
                       <div className="flex flex-wrap gap-2">
                         {lot.amenities.slice(0, 4).map((amenity) => (
                           <Badge key={amenity} variant="secondary" className="text-xs">
@@ -537,7 +531,6 @@ export default function AvailableParkingPage() {
                         )}
                       </div>
 
-                      {/* Pricing and Actions */}
                       <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
                         <div className="flex items-center gap-4">
                           <div className="flex items-center gap-1">
@@ -584,7 +577,6 @@ export default function AvailableParkingPage() {
         </div>
       )}
 
-      {/* Booking Modal */}
       {selectedLot && (
         <BookingModal
           isOpen={showBookingModal}
