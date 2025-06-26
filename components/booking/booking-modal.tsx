@@ -1,7 +1,6 @@
 "use client"
 
 import type React from "react"
-
 import { useState } from "react"
 import {
   Dialog,
@@ -32,14 +31,21 @@ interface ParkingLot {
   }
 }
 
+interface User {
+  id: string
+  name: string
+  email: string
+  role: string
+}
+
 interface BookingModalProps {
   isOpen: boolean
   onClose: () => void
   parkingLot: ParkingLot
-  user: any
+  user: User
 }
 
-export function BookingModal({ isOpen, onClose, parkingLot, user }: BookingModalProps) {
+export default function BookingModal({ isOpen, onClose, parkingLot, user }: BookingModalProps) {
   const { toast } = useToast()
   const [isLoading, setIsLoading] = useState(false)
   const [bookingData, setBookingData] = useState({

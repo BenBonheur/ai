@@ -1,7 +1,5 @@
-// Simplified authentication system with JWT
 import bcrypt from "bcryptjs"
 import jwt from "jsonwebtoken"
-import { createUser, getUserByEmail } from "./database"
 
 export interface User {
   id: string
@@ -28,46 +26,54 @@ export interface RegisterData {
   role: "client" | "admin" | "employee" | "owner"
 }
 
-// Mock user data for demo purposes
+// Mock user database
 const mockUsers = [
   {
     id: "1",
     email: "admin@rwanda-parking.com",
     password: "$2a$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi", // password
     name: "Admin User",
-    role: "admin",
-    createdAt: new Date(),
+    phone: "+250788123456",
+    role: "admin" as const,
+    createdAt: new Date().toISOString(),
+    isActive: true,
   },
   {
     id: "2",
     email: "employee@rwanda-parking.com",
     password: "$2a$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi", // password
     name: "Employee User",
-    role: "employee",
-    createdAt: new Date(),
+    phone: "+250788123457",
+    role: "employee" as const,
+    createdAt: new Date().toISOString(),
+    isActive: true,
   },
   {
     id: "3",
     email: "owner@rwanda-parking.com",
     password: "$2a$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi", // password
     name: "Owner User",
-    role: "owner",
-    createdAt: new Date(),
+    phone: "+250788123458",
+    role: "owner" as const,
+    createdAt: new Date().toISOString(),
+    isActive: true,
   },
   {
     id: "4",
     email: "client@rwanda-parking.com",
     password: "$2a$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi", // password
     name: "Client User",
-    role: "client",
-    createdAt: new Date(),
+    phone: "+250788123459",
+    role: "client" as const,
+    createdAt: new Date().toISOString(),
+    isActive: true,
   },
 ]
 
 export async function registerUser(userData: RegisterData): Promise<LoginResult> {
   try {
     // Check if user already exists
-    const existingUser = await getUserByEmail(userData.email)
+    const existingUser = mockUsers.find((user) => user.email === userData.email)
     if (existingUser) {
       return {
         success: false,
@@ -78,20 +84,19 @@ export async function registerUser(userData: RegisterData): Promise<LoginResult>
     // Hash password
     const hashedPassword = await bcrypt.hash(userData.password, 12)
 
-    // Create user in database
-    const result = await createUser({
-      ...userData,
+    // Create new user
+    const newUser = {
+      id: (mockUsers.length + 1).toString(),
+      email: userData.email,
       password: hashedPassword,
-    })
-
-    if (!result.success) {
-      return {
-        success: false,
-        error: "Failed to create user",
-      }
+      name: userData.name,
+      phone: userData.phone,
+      role: userData.role,
+      createdAt: new Date().toISOString(),
+      isActive: true,
     }
 
-    const newUser = result.data[0]
+    mockUsers.push(newUser)
 
     // Generate JWT token
     const token = jwt.sign(
@@ -108,8 +113,8 @@ export async function registerUser(userData: RegisterData): Promise<LoginResult>
         email: newUser.email,
         phone: newUser.phone,
         role: newUser.role,
-        createdAt: newUser.created_at,
-        isActive: true,
+        createdAt: newUser.createdAt,
+        isActive: newUser.isActive,
       },
       token,
     }
@@ -124,10 +129,10 @@ export async function registerUser(userData: RegisterData): Promise<LoginResult>
 
 export async function loginUser(email: string, password: string, role: string): Promise<LoginResult> {
   try {
-    // Get user from database
-    const user = await getUserByEmail(email)
+    // Get user from mock database
+    const user = mockUsers.find((u) => u.email === email && u.role === role)
 
-    if (!user || user.role !== role) {
+    if (!user) {
       return {
         success: false,
         error: "Invalid email, password, or role",
@@ -158,8 +163,8 @@ export async function loginUser(email: string, password: string, role: string): 
         email: user.email,
         phone: user.phone,
         role: user.role,
-        createdAt: user.created_at,
-        isActive: user.is_active,
+        createdAt: user.createdAt,
+        isActive: user.isActive,
       },
       token,
     }

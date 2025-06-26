@@ -40,11 +40,11 @@ export function BookingQRCode({ bookingId, parkingLotName, startTime, endTime, s
       canvas.width = 256
       canvas.height = 256
 
-      // Create QR code as data URL
-      const qrCodeElement = document.querySelector("#booking-qr-code svg") as SVGElement
-      if (!qrCodeElement) return
+      // Get the SVG element
+      const svgElement = document.querySelector("#booking-qr-code svg") as SVGElement
+      if (!svgElement) return
 
-      const svgData = new XMLSerializer().serializeToString(qrCodeElement)
+      const svgData = new XMLSerializer().serializeToString(svgElement)
       const svgBlob = new Blob([svgData], { type: "image/svg+xml;charset=utf-8" })
       const url = URL.createObjectURL(svgBlob)
 
