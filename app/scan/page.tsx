@@ -1,17 +1,16 @@
 "use client"
 
 import type React from "react"
-
 import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
+import { Textarea } from "@/components/ui/textarea"
 import { useToast } from "@/hooks/use-toast"
 import { getCurrentUser } from "@/lib/auth"
-import { QrScanner } from "@yudiel/react-qr-scanner"
-import { AlertCircle, CheckCircle2, Camera, CameraOff } from "lucide-react"
+import { AlertCircle, CheckCircle2, QrCode } from "lucide-react"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 
 export default function ScanQRPage() {
@@ -19,8 +18,8 @@ export default function ScanQRPage() {
   const { toast } = useToast()
   const [user, setUser] = useState<any>(null)
   const [isLoading, setIsLoading] = useState(true)
-  const [isCameraActive, setIsCameraActive] = useState(false)
   const [manualBookingId, setManualBookingId] = useState("")
+  const [manualQRData, setManualQRData] = useState("")
   const [scanResult, setScanResult] = useState<{
     success: boolean
     message: string
@@ -59,7 +58,7 @@ export default function ScanQRPage() {
     checkAuth()
   }, [router, toast])
 
-  const handleScan = async (data: string) => {
+  const processQRData = async (data: string) => {
     try {
       // Parse QR code data
       const bookingData = JSON.parse(data)
@@ -103,14 +102,11 @@ export default function ScanQRPage() {
           booking: bookingData,
         })
       }
-
-      // Turn off camera after successful scan
-      setIsCameraActive(false)
     } catch (error) {
       console.error("Error processing QR code:", error)
       setScanResult({
         success: false,
-        message: "Invalid QR code. Please try again.",
+        message: "Invalid QR code data. Please try again.",
       })
     }
   }
@@ -151,16 +147,25 @@ export default function ScanQRPage() {
     }
   }
 
+  const handleManualQREntry = async (e: React.FormEvent) => {
+    e.preventDefault()
+
+    if (!manualQRData) {
+      toast({
+        title: "Error",
+        description: "Please enter QR code data",
+        variant: "destructive",
+      })
+      return
+    }
+
+    await processQRData(manualQRData)
+  }
+
   const resetScan = () => {
     setScanResult(null)
     setManualBookingId("")
-  }
-
-  const toggleCamera = () => {
-    setIsCameraActive(!isCameraActive)
-    if (scanResult) {
-      setScanResult(null)
-    }
+    setManualQRData("")
   }
 
   if (isLoading) {
@@ -181,57 +186,31 @@ export default function ScanQRPage() {
           <h2 className="text-3xl font-bold tracking-tight">Scan Parking QR Code</h2>
           <p className="text-muted-foreground">Validate parking bookings by scanning QR codes</p>
         </div>
-        <Button onClick={toggleCamera}>
-          {isCameraActive ? (
-            <>
-              <CameraOff className="mr-2 h-4 w-4" />
-              Turn Off Camera
-            </>
-          ) : (
-            <>
-              <Camera className="mr-2 h-4 w-4" />
-              Turn On Camera
-            </>
-          )}
-        </Button>
       </div>
 
       <div className="grid gap-6 md:grid-cols-2">
         <Card>
           <CardHeader>
-            <CardTitle>Scan QR Code</CardTitle>
+            <CardTitle>QR Code Scanner</CardTitle>
             <CardDescription>
-              Scan the QR code from the customer's phone or printed ticket to validate their parking
+              Camera-based QR scanning is not available in this demo. Use manual entry instead.
             </CardDescription>
           </CardHeader>
           <CardContent>
-            {isCameraActive ? (
-              <div className="aspect-square max-h-[400px] overflow-hidden rounded-lg border">
-                <QrScanner
-                  onDecode={handleScan}
-                  onError={(error) => {
-                    console.error(error?.message)
-                  }}
-                />
+            <div className="aspect-square max-h-[400px] flex items-center justify-center rounded-lg border bg-muted/50">
+              <div className="text-center">
+                <QrCode className="mx-auto h-12 w-12 text-muted-foreground" />
+                <p className="mt-2 text-sm text-muted-foreground">QR Scanner not available</p>
+                <p className="text-xs text-muted-foreground">Use manual entry below</p>
               </div>
-            ) : (
-              <div className="aspect-square max-h-[400px] flex items-center justify-center rounded-lg border bg-muted/50">
-                <div className="text-center">
-                  <Camera className="mx-auto h-12 w-12 text-muted-foreground" />
-                  <p className="mt-2 text-sm text-muted-foreground">Camera is turned off</p>
-                  <Button className="mt-4" onClick={toggleCamera}>
-                    Turn On Camera
-                  </Button>
-                </div>
-              </div>
-            )}
+            </div>
           </CardContent>
         </Card>
 
         <div className="space-y-6">
           <Card>
             <CardHeader>
-              <CardTitle>Manual Entry</CardTitle>
+              <CardTitle>Manual Booking ID Entry</CardTitle>
               <CardDescription>Enter the booking ID manually if the QR code cannot be scanned</CardDescription>
             </CardHeader>
             <form onSubmit={handleManualEntry}>
@@ -249,6 +228,32 @@ export default function ScanQRPage() {
               <CardFooter>
                 <Button type="submit" className="w-full">
                   Validate Booking
+                </Button>
+              </CardFooter>
+            </form>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle>Manual QR Data Entry</CardTitle>
+              <CardDescription>Paste the QR code data directly if you have it</CardDescription>
+            </CardHeader>
+            <form onSubmit={handleManualQREntry}>
+              <CardContent>
+                <div className="space-y-2">
+                  <Label htmlFor="qrData">QR Code Data (JSON)</Label>
+                  <Textarea
+                    id="qrData"
+                    placeholder='{"bookingId":"B-1234","parkingLotName":"Example Parking","status":"booked"}'
+                    value={manualQRData}
+                    onChange={(e) => setManualQRData(e.target.value)}
+                    rows={4}
+                  />
+                </div>
+              </CardContent>
+              <CardFooter>
+                <Button type="submit" className="w-full">
+                  Process QR Data
                 </Button>
               </CardFooter>
             </form>

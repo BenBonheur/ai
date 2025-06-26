@@ -1,5 +1,6 @@
-// Simplified authentication system without JWT
+// Simplified authentication system with JWT
 import bcrypt from "bcryptjs"
+import jwt from "jsonwebtoken"
 import { createUser, getUserByEmail } from "./database"
 
 export interface User {
@@ -16,6 +17,7 @@ export interface LoginResult {
   success: boolean
   user?: User
   error?: string
+  token?: string
 }
 
 export interface RegisterData {
@@ -25,6 +27,42 @@ export interface RegisterData {
   password: string
   role: "client" | "admin" | "employee" | "owner"
 }
+
+// Mock user data for demo purposes
+const mockUsers = [
+  {
+    id: "1",
+    email: "admin@rwanda-parking.com",
+    password: "$2a$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi", // password
+    name: "Admin User",
+    role: "admin",
+    createdAt: new Date(),
+  },
+  {
+    id: "2",
+    email: "employee@rwanda-parking.com",
+    password: "$2a$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi", // password
+    name: "Employee User",
+    role: "employee",
+    createdAt: new Date(),
+  },
+  {
+    id: "3",
+    email: "owner@rwanda-parking.com",
+    password: "$2a$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi", // password
+    name: "Owner User",
+    role: "owner",
+    createdAt: new Date(),
+  },
+  {
+    id: "4",
+    email: "client@rwanda-parking.com",
+    password: "$2a$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi", // password
+    name: "Client User",
+    role: "client",
+    createdAt: new Date(),
+  },
+]
 
 export async function registerUser(userData: RegisterData): Promise<LoginResult> {
   try {
@@ -55,6 +93,13 @@ export async function registerUser(userData: RegisterData): Promise<LoginResult>
 
     const newUser = result.data[0]
 
+    // Generate JWT token
+    const token = jwt.sign(
+      { userId: newUser.id, email: newUser.email, role: newUser.role },
+      process.env.JWT_SECRET || "fallback-secret",
+      { expiresIn: "7d" },
+    )
+
     return {
       success: true,
       user: {
@@ -66,6 +111,7 @@ export async function registerUser(userData: RegisterData): Promise<LoginResult>
         createdAt: newUser.created_at,
         isActive: true,
       },
+      token,
     }
   } catch (error) {
     console.error("Registration error:", error)
@@ -97,6 +143,13 @@ export async function loginUser(email: string, password: string, role: string): 
       }
     }
 
+    // Generate JWT token
+    const token = jwt.sign(
+      { userId: user.id, email: user.email, role: user.role },
+      process.env.JWT_SECRET || "fallback-secret",
+      { expiresIn: "7d" },
+    )
+
     return {
       success: true,
       user: {
@@ -108,6 +161,7 @@ export async function loginUser(email: string, password: string, role: string): 
         createdAt: user.created_at,
         isActive: user.is_active,
       },
+      token,
     }
   } catch (error) {
     console.error("Login error:", error)
@@ -151,4 +205,28 @@ export async function logout(): Promise<void> {
 export async function isAuthenticated(): Promise<boolean> {
   const user = await getCurrentUserClient()
   return user !== null
+}
+
+export async function verifyToken(token: string) {
+  try {
+    const decoded = jwt.verify(token, process.env.JWT_SECRET || "fallback-secret") as any
+    const user = mockUsers.find((u) => u.id === decoded.userId)
+
+    if (!user) {
+      return { success: false, error: "User not found" }
+    }
+
+    return {
+      success: true,
+      user: {
+        id: user.id,
+        email: user.email,
+        name: user.name,
+        role: user.role,
+      },
+    }
+  } catch (error) {
+    console.error("Token verification error:", error)
+    return { success: false, error: "Invalid token" }
+  }
 }

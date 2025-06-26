@@ -1,7 +1,7 @@
 "use client"
 
 import { useState } from "react"
-import QRCode from "qrcode.react"
+import QRCode from "react-qr-code"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Share2, Download } from "lucide-react"
@@ -29,60 +29,82 @@ export function BookingQRCode({ bookingId, parkingLotName, startTime, endTime, s
     timestamp: new Date().toISOString(),
   })
 
-  const handleDownload = () => {
-    const canvas = document.getElementById("booking-qr-code") as HTMLCanvasElement
-    if (!canvas) return
+  const handleDownload = async () => {
+    try {
+      // Create a canvas element to render the QR code
+      const canvas = document.createElement("canvas")
+      const ctx = canvas.getContext("2d")
+      if (!ctx) return
 
-    const url = canvas.toDataURL("image/png")
-    const link = document.createElement("a")
-    link.href = url
-    link.download = `parking-qr-${bookingId}.png`
-    document.body.appendChild(link)
-    link.click()
-    document.body.removeChild(link)
+      // Set canvas size
+      canvas.width = 256
+      canvas.height = 256
 
-    toast({
-      title: "QR Code Downloaded",
-      description: "Your parking QR code has been downloaded successfully.",
-    })
+      // Create QR code as data URL
+      const qrCodeElement = document.querySelector("#booking-qr-code svg") as SVGElement
+      if (!qrCodeElement) return
+
+      const svgData = new XMLSerializer().serializeToString(qrCodeElement)
+      const svgBlob = new Blob([svgData], { type: "image/svg+xml;charset=utf-8" })
+      const url = URL.createObjectURL(svgBlob)
+
+      const img = new Image()
+      img.onload = () => {
+        ctx.drawImage(img, 0, 0, 256, 256)
+
+        // Download the image
+        const link = document.createElement("a")
+        link.href = canvas.toDataURL("image/png")
+        link.download = `parking-qr-${bookingId}.png`
+        document.body.appendChild(link)
+        link.click()
+        document.body.removeChild(link)
+
+        URL.revokeObjectURL(url)
+
+        toast({
+          title: "QR Code Downloaded",
+          description: "Your parking QR code has been downloaded successfully.",
+        })
+      }
+      img.src = url
+    } catch (error) {
+      console.error("Download error:", error)
+      toast({
+        title: "Download failed",
+        description: "Failed to download QR code. Please try again.",
+        variant: "destructive",
+      })
+    }
   }
 
   const handleShare = async () => {
     try {
       setIsSharing(true)
-      const canvas = document.getElementById("booking-qr-code") as HTMLCanvasElement
-      if (!canvas) return
-
-      const blob = await new Promise<Blob>((resolve) => {
-        canvas.toBlob((blob) => {
-          if (blob) {
-            resolve(blob)
-          }
-        }, "image/png")
-      })
 
       if (navigator.share) {
         await navigator.share({
           title: "Rwanda Parking QR Code",
           text: `Parking booking for ${parkingLotName}`,
-          files: [new File([blob], "parking-qr.png", { type: "image/png" })],
+          url: window.location.href,
         })
         toast({
           title: "QR Code Shared",
           description: "Your parking QR code has been shared successfully.",
         })
       } else {
+        // Fallback: copy to clipboard
+        await navigator.clipboard.writeText(qrData)
         toast({
-          title: "Sharing not supported",
-          description: "Your browser doesn't support sharing files.",
-          variant: "destructive",
+          title: "Copied to clipboard",
+          description: "QR code data has been copied to your clipboard.",
         })
       }
     } catch (error) {
       console.error("Error sharing:", error)
       toast({
         title: "Sharing failed",
-        description: "Failed to share QR code. Please try downloading instead.",
+        description: "Failed to share QR code. Please try again.",
         variant: "destructive",
       })
     } finally {
@@ -110,8 +132,8 @@ export function BookingQRCode({ bookingId, parkingLotName, startTime, endTime, s
         </CardDescription>
       </CardHeader>
       <CardContent className="flex flex-col items-center">
-        <div className="bg-white p-4 rounded-lg shadow-sm">
-          <QRCode id="booking-qr-code" value={qrData} size={200} level="H" includeMargin={true} renderAs="canvas" />
+        <div className="bg-white p-4 rounded-lg shadow-sm" id="booking-qr-code">
+          <QRCode value={qrData} size={200} level="H" />
         </div>
         <div className="mt-4 text-center">
           <p className="font-medium">{parkingLotName}</p>
@@ -140,7 +162,7 @@ export function BookingQRCode({ bookingId, parkingLotName, startTime, endTime, s
           <Download className="mr-2 h-4 w-4" />
           Download
         </Button>
-        <Button onClick={handleShare} disabled={isSharing || !navigator.canShare}>
+        <Button onClick={handleShare} disabled={isSharing}>
           <Share2 className="mr-2 h-4 w-4" />
           {isSharing ? "Sharing..." : "Share"}
         </Button>
